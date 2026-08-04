@@ -1,0 +1,8 @@
+{
+  "name": "jvd-frontend",
+  "description": "Shared agent setup for the Laravel + React/Vite stack: a read guard that keeps build output out of context, format-on-edit, review and accessibility agents, and the skills both projects use.",
+  "version": "1.0.0",
+  "author": {
+    "name": "JVD-Soft"
+  }
+}

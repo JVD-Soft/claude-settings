@@ -1,0 +1,27 @@
+name: hooks
+
+# The read guard decides what an agent may read in every JVD-Soft project.
+# Nothing else exercises it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: hooks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guard-read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: node plugins/jvd-frontend/hooks/guard-read.test.mjs
