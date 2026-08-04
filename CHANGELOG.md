@@ -11,6 +11,99 @@ know about — a hook that starts blocking something it allowed, a renamed skill
 
 ## jvd-frontend
 
+### 2.0.0
+
+Findings from a full audit of `base_setup/frontend` — SEO, wiring, QA, a11y,
+performance, library currency, security and context budget — each one verified
+against the files before it was acted on. The fixes below are the ones that
+reached the shared layer; the rest are project-local.
+
+- **Breaking (hook):** the read guard now blocks `*.tsbuildinfo` and the
+  `.tsbuild/` directory. `tsc -b` writes its incremental cache *beside* the
+  tsconfig, inside the source tree, so no existing rule caught it — a 61 KB file
+  of hashes and version stamps that read clean.
+- **Breaking (nginx template):** the SPA fallback is now `/app.html`, not
+  `/index.html`. `scripts/prerender.mjs` writes the rendered home page into
+  `dist/index.html`, so falling back to it answered **every** unknown URL with
+  the home page's markup and its `<link rel="canonical">` — a soft 404 carrying
+  another page's metadata, at HTTP 200. `/` is unaffected: `$uri/` reaches the
+  server-level `index` directive, which still finds `dist/index.html`.
+  Prerendered subroutes are unaffected for the same reason.
+- **nginx template:** `robots.txt` and `sitemap.xml` get exact-match locations
+  pointing at the frontend build. The existing regex location searched Laravel's
+  `public/` first, where a `robots.txt` also lives, so the generated one — with
+  the `Disallow` rules and the `Sitemap:` line — was never served in any
+  deployment. Exact-match beats regex in nginx, so nothing else needed changing
+  and `backend/` stays untouched.
+- **prerender template:** `SITE_URL` now comes from `loadEnv()` rather than
+  `process.env`. The script runs as a plain `node`, so it never saw
+  `frontend/.env` — while the app half reads the same variable through
+  `import.meta.env`, which Vite does fill from it. A correctly configured project
+  therefore built pages whose canonical and og:url carried the real domain and a
+  `sitemap.xml` that said `localhost`, with every checker green. Proven against
+  the installed Vite, not recalled. A tripwire now throws when `APP_ENV` is
+  `production` and the URL is still a loopback host.
+- **prerender template:** JSON-LD is no longer hoisted into `<head>`. It was, so
+  that a crawler reading only the head would find it; the cost is that
+  `hydrateRoot` sees markup moved out of `#root`, calls it a mismatch and
+  re-renders the document — re-emitting every head tag as a duplicate. Two
+  canonicals is not a canonical. JSON-LD is valid in the body and Google reads
+  it there.
+- **prerender template:** the localhost tripwire fires on **every** deployed
+  environment, not only `production`. This stack runs local, Docker, staging and
+  production; staging publishes canonical URLs and a sitemap like anything else
+  and gets indexed for them, so checking one environment name left the other one
+  silent. Local values (`local`, `development`, `test`, unset) stay quiet.
+- `--brand`'s anchor for `prerender.mjs` was pinned to `process.env.VITE_SITE_URL`
+  and stopped matching when that line changed. It is now anchored on
+  `VITE_SITE_URL ?? '` — the part that is about the value, not about how it is
+  read. A missed anchor is reported as a skip, not an error, so this would have
+  been silent.
+
+### 1.7.0
+- `src/locales/locales.test.ts` — new owned test. A missing translation key does
+  not throw: i18next renders the key itself, so the user reads
+  `auth.login.title` where a sentence belongs, in the language nobody on the
+  team clicks through. Lint, typecheck, build and every other test stay green.
+  The rule ("add the key to every locale in the same change") existed only as
+  prose in each project's `frontend/AGENTS.md` and in the `i18n-translations`
+  skill — which is to say it held exactly as long as someone remembered it.
+  Checks key parity across every locale directory found on disk, interpolation
+  placeholder parity per key, empty and non-string values.
+- The same test also pins **plural completeness per language**, which is the
+  part a naive key-set comparison gets wrong. i18next picks its suffix through
+  `Intl.PluralRules`, and the categories differ: English needs `_one`/`_other`,
+  Ukrainian also needs `_few` and `_many`. A first version of this test read
+  those eight extra Ukrainian keys in `supplier_manager` as drift and failed on
+  correct translations. Parity is now compared over *logical* keys, and each
+  locale is separately required to carry every form its own language selects —
+  a missing `_many` renders the raw key for counts of five and up.
+  https://www.i18next.com/translation-function/plurals
+- The scaffolder read **every entry** in `src/locales/` as a language, files
+  included, so the new test file made it ask the user to hand-write
+  `frontend/src/locales/locales.test.ts/translation.json`. Latent since the
+  locale merge was written — any non-directory there would have done it.
+  Directories only now, with a self-test that fails when the filter is removed.
+- `i18n-translations` gained the section it was missing: plural categories are
+  per language, `en` needs two forms and `uk` needs four, and writing only
+  `_one`/`_other` in Ukrainian renders the raw key for counts of two and five —
+  the range most lists land in. The skill also claimed a missing key "won't get
+  caught otherwise", which the new test makes untrue, and asserted that parity
+  "is currently perfect", which is project state in a shared file.
+
+### 1.6.0
+- Two lint rules in the template's `eslint.config.js`, for two bugs that had
+  already shipped and that both look like working code:
+  `no-restricted-syntax` requires **`noValidate` on every `<form>`** — without
+  it the browser's own constraint validation suppresses the submit event, so
+  react-hook-form never runs, the translated zod message can never appear, and
+  the button silently does nothing; `no-restricted-globals` bans raw
+  `localStorage`/`sessionStorage` in favour of `safeStorage`, which throws in
+  private mode and does not exist at all under the build-time prerender, where
+  `i18n.ts` reads it at module scope. `src/lib/storage.ts` and the storage test
+  are exempt, being the wrapper and its verification.
+  *(Shipped in the 1.6.0 bump; this entry was written afterwards.)*
+
 ### 1.5.2
 - README documented installation and rationale but never **how to invoke any of
   it**, and the command list gave the wrong names: `/check` instead of

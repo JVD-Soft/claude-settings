@@ -53,7 +53,7 @@ const BLOCK_DIRS = new Set([
   'dist', 'dist-ssr', 'build', 'out', 'coverage',
   '.git', '.svn', '.hg', '.idea', '.gradle', '.mvn',
   '.next', '.nuxt', '.svelte-kit', '.astro', '.turbo', '.parcel-cache',
-  '.vite', '.angular', 'storybook-static', '.docusaurus', '.yarn',
+  '.vite', '.angular', 'storybook-static', '.docusaurus', '.yarn', '.tsbuild',
   '__pycache__', '.venv', 'venv', '.tox', '.mypy_cache', '.pytest_cache',
   '.ruff_cache', 'site-packages', '.eggs',
   'target', 'obj', 'pkg/mod',
@@ -124,6 +124,12 @@ const decide = (filePath, overrides) => {
   }
   if (NOISY_FILES.has(base) || overrides.files.has(base)) {
     return `'${base}' is a lockfile — thousands of lines, zero source signal`;
+  }
+  // `tsc -b` writes these next to the tsconfig that produced them, so they sit
+  // in the source tree rather than in a build directory the rules above catch.
+  // Tens of thousands of characters of file hashes and version stamps.
+  if (ext === '.tsbuildinfo') {
+    return `'${base}' is TypeScript's incremental-build cache — file hashes, no source`;
   }
   for (const pattern of [...BLOCK_DIRS, ...overrides.dirs]) {
     if (segmentsMatch(dirs, pattern)) {

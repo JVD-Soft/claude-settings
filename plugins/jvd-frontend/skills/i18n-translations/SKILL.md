@@ -44,12 +44,40 @@ function SubmitButton() {
 
 `useTranslation()` is unchanged in react-i18next v16 (this repo's major).
 
+## Plurals — the categories are not the same per language
+
+i18next picks the suffix through
+[`Intl.PluralRules`](https://www.i18next.com/translation-function/plurals), and
+**English and Ukrainian need different sets**:
+
+| | forms required |
+|---|---|
+| `en` | `_one`, `_other` |
+| `uk` | `_one`, `_few`, `_many`, `_other` |
+
+```json
+{ "catalog": {
+  "found_products_one":   "Found {{count}} product",
+  "found_products_other": "Found {{count}} products" } }
+```
+
+The Ukrainian file needs four entries for that same key, not two. Writing only
+`_one`/`_other` there is not a parity error a naive diff would show — it renders
+the raw key for counts of two and five, which is the range most lists land in.
+`_zero` is optional and allowed in any language, for a nicer "nothing found".
+
+Call it with `t('catalog.found_products', { count })`; `count` is what selects
+the form, so it must be passed even when the sentence doesn't print it.
+
 ## Rules
 
 - Every key added to `src/locales/en/translation.json` must be added to
-  `src/locales/uk/translation.json` in the **same change** — a missing key in
-  one locale is a silent runtime fallback, not a build error, so it won't get
-  caught otherwise. Parity is currently perfect; keep it that way.
+  `src/locales/uk/translation.json` in the **same change**. A missing key is a
+  silent runtime fallback, not a build error: i18next renders the key itself, so
+  the user reads `auth.login.title` where a sentence belongs.
+  `src/locales/locales.test.ts` enforces this — parity, plural completeness,
+  interpolation placeholders, and empty values — so `yarn test` is where you
+  find out, not production. Run it after touching either file.
 - Namespace keys by feature/page (`orders.submit`, `auth.login.title`), not by
   component name — component names get refactored, feature names don't. Note the
   existing keys are mostly flat and single-word (`email`, `dashboard`,
