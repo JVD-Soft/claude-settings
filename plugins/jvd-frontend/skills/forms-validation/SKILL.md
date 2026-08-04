@@ -9,7 +9,7 @@ description: "Builds or validates a form. Activates when adding a form, an input
 
 Any new form, or adding/changing validation on an existing one.
 
-## Version trap — this repo is on zod v4
+## Version trap — this stack is on zod v4
 
 `package.json` pins `zod: ^4.x`. Most zod examples online (and most model
 training data) are **v3** and will produce deprecated or broken code here:
@@ -29,50 +29,70 @@ against `/colinhacks/zod` rather than recalling from memory.
 
 ## Pattern
 
-Define the schema once, derive types from it, wire it through `zodResolver` —
-don't write manual `if (!value) setError(...)` validation:
+Copy an existing form rather than this snippet — every form in the app is built
+this way. The shape:
 
 ```tsx
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+const buildSchema = (t: (key: string) => string) =>
+  z.object({
+    email: z.email({ error: t('errors.email') }),
+    password: z.string().min(8, { error: t('errors.password') }),
+  });
 
-const loginSchema = z.object({
-  email: z.email(),                 // v4 top-level format fn
-  password: z.string().min(8),      // .min() is still a chained method
+type Values = z.infer<ReturnType<typeof buildSchema>>;
+const FIELDS = ['email', 'password'] as const;
+
+const form = useForm<Values>({
+  resolver: zodResolver(buildSchema(t)),
+  defaultValues: { email: '', password: '' },
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
-
-function LoginForm() {
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
-  });
-
-  const onSubmit = form.handleSubmit((values) => {
-    // values is fully typed from the schema — no `any`
-  });
-}
+const onSubmit = form.handleSubmit(async (values) => {
+  setFormError(null);
+  try {
+    await mutate(values);
+  } catch (error) {
+    if (!applyApiErrors(error, form, FIELDS)) {
+      setFormError(getApiErrorMessage(error) ?? t('…'));
+    }
+  }
+});
 ```
 
-Note: `@hookform/resolvers` isn't in `package.json` yet — add it alongside the
-first form that needs schema validation, don't assume it's already installed.
-No file under `src/` imports zod yet either, so there is no in-repo usage to
-copy; this skill is the reference until one exists.
+```tsx
+<form onSubmit={(event) => void onSubmit(event)} noValidate>
+```
 
-## Conventions
+## Rules
 
-- Reference forms already in the codebase before inventing a new pattern:
-  `src/pages/Auth/LoginPage.tsx`, `RegisterPage.tsx`, `ResetPasswordPage.tsx`,
-  `ForgotPasswordPage.tsx` are the existing auth forms — match their structure.
-  They are hand-rolled `useState` forms, not RHF; type the submit handler as
-  `FormEvent<HTMLFormElement>` and pass it as `onSubmit={(e) => void handleSubmit(e)}`
-  when it's async, or `no-misused-promises` rejects it.
-- Error messages are user-facing text → go through `t()` (see the
-  `i18n-translations` skill), not hardcoded strings in the zod schema.
-- Server-side validation errors (from the Laravel backend, typically a 422 with
-  a field → messages map) should map back onto the same RHF field errors via
-  `form.setError(fieldName, { message })` inside the mutation's `onError`, not
-  a separate ad hoc error state. (`setError` is a react-hook-form API — it keeps
-  `message`; only zod renamed its param to `error`.)
+- **`noValidate` on the `<form>`, always.** Without it the browser's own
+  constraint validation runs first: a `type="email"` input with bad text blocks
+  the submit event entirely, so the schema never runs and the user sees an
+  untranslated native bubble instead of the app's message. The form looks
+  broken — the button does nothing — and no test that only checks the happy
+  path will catch it.
+- **The schema is built by a function taking `t`**, never defined at module
+  scope. Messages are user-facing and have to change with the language; a
+  module-level schema captures whatever locale was active at import time.
+- The submit handler is `form.handleSubmit(...)`, passed as
+  `onSubmit={(event) => void onSubmit(event)}` when it is async, or
+  `no-misused-promises` rejects it.
+- Error messages are user-facing text → through `t()` (see the
+  `i18n-translations` skill), never hardcoded in the schema.
+- Server-side validation errors (a 422 with a field → messages map) go back onto
+  the same RHF fields, not into a separate ad hoc error state. Use
+  **`applyApiErrors(error, form, fields)` from `@/lib/formErrors`** rather than
+  writing the loop again. It returns `false` when the 422 was about something
+  with no input to attach to — `items` on an order, `order` on a review,
+  `category_ids` on a profile — which is the signal to render a banner instead
+  of swallowing the message.
+
+  The backend's messages arrive already translated (`lang/{en,uk}/`), so they
+  are shown as-is rather than mapped to a client string that would then have to
+  be kept in step with the server's rules. (`setError` under the hood is a
+  react-hook-form API and keeps `message`; only zod renamed its param to
+  `error`.)
+- Auth screens share `AuthCard` (`src/components/auth/AuthCard.tsx`) for their
+  frame. They sit outside both app shells, so without it each one drifts — and
+  `AuthCard` is where `noindex` lives, which a sign-in page needs and
+  `robots.txt` cannot provide.

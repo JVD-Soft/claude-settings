@@ -11,6 +11,30 @@ know about — a hook that starts blocking something it allowed, a renamed skill
 
 ## jvd-frontend
 
+### 1.4.0
+- `lib/formErrors.ts` (`applyApiErrors`) replaces `lib/applyServerErrors.ts` in
+  the template. The old one set every key a 422 returned, including fields the
+  form does not render — react-hook-form then held an error against a name
+  nothing was bound to, so the message vanished and the user saw a rejection
+  with no explanation. The new one takes the form's field list and returns
+  `false` when the 422 belongs in a banner. Adopted from supplier_manager,
+  which had arrived at it independently.
+- `forms-validation` skill rewritten against what the two projects actually do.
+  It had gone stale to the point of being wrong — it still said
+  `@hookform/resolvers` was not installed and that the auth forms were
+  hand-rolled `useState`.
+  It now leads with **`noValidate` on every `<form>`**: without it the
+  browser's constraint validation blocks the submit event, so the schema never
+  runs and the translated messages can never appear. Nine forms in one project
+  were shipping with the submit button doing nothing on invalid input.
+- `--accept` records the template version a seeded file was compared against,
+  for projects that diverge on purpose. Without it, five files reported for
+  reconciliation on every run and the report became something to skim.
+- Starters (`entry-prerender.tsx`, `config/index.ts`) are written once and then
+  left alone silently — their whole point is to be rewritten per project.
+- nginx template: the server-level `include` was indented as if it sat inside a
+  location.
+
 ### 1.3.0
 - `skills/scaffold` — new, and the reason this plugin exists rather than a
   README. Brings a project's frontend to the stack baseline: Vitest harness,

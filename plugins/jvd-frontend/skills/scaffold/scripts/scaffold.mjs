@@ -20,7 +20,7 @@
  * Nothing is deleted, ever, and every run is idempotent.
  *
  * Usage:
- *   node scaffold.mjs [--dry-run] [--force] [--root DIR] [--set KEY=VALUE]...
+ *   node scaffold.mjs [--dry-run] [--force] [--accept] [--root DIR] [--set KEY=VALUE]...
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -43,6 +43,16 @@ const value = (name) => {
 
 const dryRun = flag('dry-run');
 const force = flag('force');
+/**
+ * Records the current template version for seeded files without touching them:
+ * "I have looked at this difference and the project's version is right."
+ *
+ * Without it a project that legitimately diverges — its own routes, its own
+ * manifest — is told about the same five files on every run, and the report
+ * becomes something to skip past. After --accept, only a *later* template
+ * change speaks up.
+ */
+const accept = flag('accept');
 
 // --- project variables ------------------------------------------------------
 
@@ -122,6 +132,7 @@ const updated = [];
 const merged = [];
 const unchanged = [];
 const reconcile = [];
+const accepted = [];
 const manual = [];
 
 const digest = (text) => createHash('sha1').update(text.replace(/\r\n/g, '\n')).digest('hex');
@@ -183,7 +194,7 @@ const SEEDED = new Set([
  * Seeded, and the project already has a file there. Three different situations
  * that look the same on disk, told apart by the stamp.
  */
-const seed = (relative, content, templateDigest) => {
+const seed = (relative, content, templateDigest, { once = false } = {}) => {
   const target = path.join(root, relative);
 
   if (!existsSync(target)) {
@@ -196,17 +207,26 @@ const seed = (relative, content, templateDigest) => {
     stamp.files[relative] = templateDigest;
     return;
   }
+  // A starter is a first draft, not something to keep in step. entry-prerender's
+  // provider stack differs in every project by design — reporting that as drift
+  // on every run is noise that trains people to skim the report.
+  if (once && !force) {
+    unchanged.push(relative);
+    return;
+  }
   if (force) {
     write(relative, content);
     stamp.files[relative] = templateDigest;
     return;
   }
   const adopted = stamp.files[relative];
-  if (!adopted) {
-    reconcile.push(`${relative} — the project has its own; the template's differs. Diff them and merge by hand, or pass --force to take the template's.`);
-  } else if (adopted !== templateDigest) {
-    reconcile.push(`${relative} — the template changed since this project adopted it. Reconcile, then re-run.`);
+  if (accept) {
     stamp.files[relative] = templateDigest;
+    accepted.push(relative);
+  } else if (!adopted) {
+    reconcile.push(`${relative} — the project has its own; the template's differs. Diff them, then --force to take the template's or --accept to keep the project's.`);
+  } else if (adopted !== templateDigest) {
+    reconcile.push(`${relative} — the template changed since this project adopted it. Diff, then --force or --accept.`);
   } else {
     unchanged.push(relative);
   }
@@ -223,7 +243,7 @@ for (const relative of walk(templateDir)) {
 
 for (const relative of walk(startersDir)) {
   const raw = readFileSync(path.join(startersDir, relative), 'utf8');
-  seed(relative, substitute(raw), digest(raw));
+  seed(relative, substitute(raw), digest(raw), { once: true });
 }
 
 // --- merge: package.json ----------------------------------------------------
@@ -547,6 +567,7 @@ section(dryRun ? 'would create' : 'created', created);
 section(dryRun ? 'would overwrite' : 'overwritten (plugin-owned, previous content differed)', updated);
 section(dryRun ? 'would merge' : 'merged', merged);
 section('reconcile — seeded files the project already owns', reconcile);
+section('accepted — the project keeps its version; only a later template change will report again', accepted);
 section('needs a person', manual);
 section('review these — the script cannot decide them', DECISIONS);
 console.log(`\nalready current: ${unchanged.length} file(s)`);

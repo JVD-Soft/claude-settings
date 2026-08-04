@@ -225,6 +225,49 @@ const run = (root, ...args) =>
   rmSync(root, { recursive: true, force: true });
 }
 
+{
+  const root = fixture();
+  put(root, 'frontend/vite.config.ts', '// the project already had one\nexport default {};\n');
+  run(root);
+
+  const acceptedRun = run(root, '--accept');
+  check('--accept keeps the project version', read(root, 'frontend/vite.config.ts').includes('already had one'));
+  check('--accept says so', acceptedRun.includes('accepted'));
+
+  const after = run(root);
+  check('and a later run stays quiet about it', !after.includes('vite.config.ts — the project has its own'));
+
+  // A template change after acceptance must speak up again — otherwise
+  // accepting once would silence the file forever.
+  const stamp = JSON.parse(read(root, 'frontend/.jvd-scaffold.json'));
+  stamp.files['frontend/vite.config.ts'] = 'stale';
+  writeFileSync(path.join(root, 'frontend/.jvd-scaffold.json'), JSON.stringify(stamp), 'utf8');
+  const changed = run(root);
+  check('a later template change reports again', changed.includes('the template changed since'));
+  check('and keeps reporting until resolved', run(root).includes('the template changed since'));
+
+  rmSync(root, { recursive: true, force: true });
+}
+
+// --- starters are written once ----------------------------------------------
+
+{
+  const root = fixture();
+  put(root, 'frontend/src/entry-prerender.tsx', '// the project wrote its own provider stack\n');
+  const out = run(root);
+
+  check(
+    'leaves an existing starter alone',
+    read(root, 'frontend/src/entry-prerender.tsx').includes('its own provider stack'),
+  );
+  check(
+    'and says nothing about it — a starter diverging is the expected end state',
+    !out.includes('entry-prerender.tsx — the project has its own'),
+  );
+
+  rmSync(root, { recursive: true, force: true });
+}
+
 // --- dry run ----------------------------------------------------------------
 
 {

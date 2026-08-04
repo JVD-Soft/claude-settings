@@ -22,6 +22,7 @@ Read the report, then run it for real without `--dry-run`.
 |---|---|
 | `--dry-run` | Prints the plan, writes nothing. |
 | `--force` | Takes the template's version of seeded files. Only when the project's copy is a stock Vite default or a stale baseline — never to silence a `reconcile` line you have not read. |
+| `--accept` | Keeps the project's version and records the template version it was compared against. For a file the project owns on purpose — its own routes, its own manifest. The line stops repeating; a *later* template change reports again. |
 | `--root DIR` | Where the project is. Found automatically from `frontend/package.json`. |
 | `--set KEY=VALUE` | Overrides one variable, for a trial run. |
 
