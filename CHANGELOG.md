@@ -11,6 +11,13 @@ know about — a hook that starts blocking something it allowed, a renamed skill
 
 ## jvd-frontend
 
+### 1.5.2
+- README documented installation and rationale but never **how to invoke any of
+  it**, and the command list gave the wrong names: `/check` instead of
+  `/jvd-frontend:check`. As written, none of them would have run. New "Как
+  пользоваться" section with the real namespaced names, the scaffolder's flags,
+  and which skills activate on their own.
+
 ### 1.5.1
 - The starter's `API_URL` defaulted to the absolute `http://localhost:80/api`,
   which made every request cross-origin the moment the app was opened at
