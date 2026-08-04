@@ -1,4 +1,4 @@
-# claude-plugins
+# claude-settings
 
 Внутренний маркетплейс плагинов Claude Code для проектов JVD-Soft.
 
@@ -25,19 +25,25 @@
 ## Подключение в проекте
 
 Репозиторий приватный, поэтому Claude Code клонирует его вашими git-креденшелами.
-Убедитесь, что `git clone https://github.com/JVD-Soft/claude-plugins.git`
+Убедитесь, что `git clone https://github.com/JVD-Soft/claude-settings.git`
 проходит без запроса пароля (Git Credential Manager на Windows или `gh auth login`).
 
 В `.claude/settings.json` проекта:
 
 ```json
 {
-  "extraKnownMarketplaces": [
-    { "source": { "source": "github", "repo": "JVD-Soft/claude-plugins" } }
-  ],
-  "enabledPlugins": ["jvd-frontend@jvd-soft"]
+  "extraKnownMarketplaces": {
+    "jvd-soft": {
+      "source": { "source": "github", "repo": "JVD-Soft/claude-settings" }
+    }
+  },
+  "enabledPlugins": { "jvd-frontend@jvd-soft": true }
 }
 ```
+
+Оба ключа — объекты, не массивы. Имя маркетплейса (`jvd-soft`) должно
+совпадать с `name` в `.claude-plugin/marketplace.json`, иначе ссылка
+`jvd-frontend@jvd-soft` никуда не ведёт.
 
 Проверить: `/plugin` показывает маркетплейс и включённый плагин, скилы видны
 под неймспейсом `jvd-frontend:`.
