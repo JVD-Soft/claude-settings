@@ -1,5 +1,5 @@
 ---
-name: prerender-doctor
+name: jvd-prerender-doctor
 description: Diagnoses a failing or empty build-time prerender — a page that renders as a spinner, a ReferenceError in Node, a missing head tag, or a route that produces no HTML. Use when `scripts/prerender.mjs` throws or writes something that is not a page.
 tools: Read, Grep, Glob, Bash
 ---

@@ -1,0 +1,27 @@
+
+# --- Frontend quality gates --------------------------------------------
+# `make check` is what must be green before a commit, and exactly what CI runs.
+# -T is required: without it these targets hang in CI and any non-interactive
+# session.
+
+YARN=$(COMPOSE) exec -T frontend yarn
+
+.PHONY: lint lint-fix typecheck test build-fr check
+
+lint:
+	$(YARN) lint
+
+lint-fix:
+	$(YARN) lint:fix
+
+typecheck:
+	$(YARN) typecheck
+
+test:
+	$(YARN) test
+
+build-fr:
+	$(YARN) build
+
+check: lint typecheck test build-fr
+	@echo "--- Frontend checks passed ---"

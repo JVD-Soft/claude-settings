@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="{{LANG}}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <!-- iOS ignores the manifest's display mode; these are how a home-screen
+         launch opens without Safari chrome. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="{{THEME_COLOR_LIGHT}}" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="{{THEME_COLOR_DARK}}" />
+    <!-- Fallback only: <Meta> replaces these per route, and the prerender step
+         writes the real ones into each generated page. Rename with the project. -->
+    <title>{{APP_NAME}}</title>
+    <meta name="description" content="{{APP_DESCRIPTION}}" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

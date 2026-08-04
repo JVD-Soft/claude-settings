@@ -1,0 +1,19 @@
+{
+  "errors": {
+    "crashed_title": "Something went wrong",
+    "crashed_body": "This part of the page failed to render. Trying again is usually enough; if it keeps happening, reload.",
+    "stale_title": "A new version is available",
+    "stale_body": "This tab was open while the app was updated, so part of it can no longer load. Reload to get the current version.",
+    "retry": "Try again",
+    "reload": "Reload",
+    "email": "Enter a valid email address.",
+    "required": "This field is required.",
+    "name": "Enter at least 2 characters.",
+    "password": "At least 8 characters."
+  },
+  "pwa": {
+    "update_available": "A new version is available.",
+    "reload": "Reload",
+    "offline": "You are offline. Some things will not work until the connection is back."
+  }
+}

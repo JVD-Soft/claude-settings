@@ -1,0 +1,31 @@
+# https://editorconfig.org
+# Единственный источник правды по отступам и переводам строк для редакторов.
+# .gitattributes задаёт то же самое для git; здесь — для того, что печатает
+# человек, до того как git это увидит.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# PSR-12
+[*.php]
+indent_size = 4
+
+[*.py]
+indent_size = 4
+
+# Отступы в целях Makefile обязаны быть табами, иначе make не запустится
+[Makefile]
+indent_style = tab
+
+[*.md]
+# Два пробела в конце строки в Markdown — это перенос строки, не мусор
+trim_trailing_whitespace = false
+
+[*.{yml,yaml,json,jsonc}]
+indent_size = 2

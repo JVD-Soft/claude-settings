@@ -1,6 +1,8 @@
 ---
-name: a11y-auditor
+name: jvd-a11y-auditor
 description: Audits accessibility in the parts lint cannot reach — accessible names, focus order, landmarks, keyboard traps. Use when adding an interactive component, a modal, a form or a navigation, or when someone asks whether a page is usable with a keyboard or a screen reader.
+skills:
+  - jvd-frontend:shadcn-ui-components
 tools: Read, Grep, Glob
 ---
 

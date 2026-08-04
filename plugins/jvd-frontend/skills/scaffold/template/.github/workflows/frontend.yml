@@ -1,0 +1,54 @@
+name: frontend
+
+# Runs the same three checks as `make check`, in the same order. If this is
+# green and `make check` is red (or the reverse), one of the two is lying —
+# fix that before trusting either.
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+# A second push to the same branch makes the first run irrelevant.
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+# Nothing here writes to the repository.
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: lint · typecheck · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Yarn 4 comes from corepack, pinned by `packageManager` in package.json.
+      - run: corepack enable
+        working-directory: .
+
+      - uses: actions/setup-node@v7
+        with:
+          # Same file the Docker image reads, so CI cannot drift onto another
+          # Node major.
+          node-version-file: frontend/.nvmrc
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+
+      # --immutable fails rather than silently resolving a different tree than
+      # the one committed.
+      - run: yarn install --immutable
+
+      # Separate steps, not one `make check`: a red X names the failure without
+      # anyone opening the log.
+      - run: yarn lint
+      - run: yarn typecheck
+      - run: yarn test
+      - run: yarn build

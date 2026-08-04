@@ -1,6 +1,9 @@
 ---
-name: test-writer
+name: jvd-test-writer
 description: Writes Vitest + React Testing Library tests that follow this project's harness. Use when adding a test, when a change needs a regression check, or when a bug has been fixed and should stay fixed.
+skills:
+  - jvd-frontend:react-data-fetching
+  - jvd-frontend:forms-validation
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 

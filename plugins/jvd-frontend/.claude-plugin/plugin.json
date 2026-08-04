@@ -1,12 +1,64 @@
 {
   "name": "jvd-frontend",
-  "description": "Shared agent setup for the React/Vite side: a read guard that keeps build output out of context, format-on-edit, review, accessibility, testing and prerender agents, and the skills both projects use.",
-  "version": "1.1.0",
+  "displayName": "JVD Frontend",
+  "description": "Shared setup for the React/Vite side of the JVD-Soft stack: a scaffolder that brings a project up to the baseline, a read guard that keeps build output out of context, format-on-edit, and the review, accessibility, testing and prerender agents both projects use.",
+  "version": "1.3.0",
   "author": {
     "name": "JVD-Soft"
   },
   "homepage": "https://github.com/JVD-Soft/claude-settings",
   "repository": "https://github.com/JVD-Soft/claude-settings",
   "license": "UNLICENSED",
-  "keywords": ["react", "vite", "typescript", "tanstack-query", "shadcn"]
+  "keywords": [
+    "react",
+    "vite",
+    "typescript",
+    "tanstack-query",
+    "shadcn"
+  ],
+  "dependencies": {
+    "typescript-lsp@claude-plugins-official": "*"
+  },
+  "userConfig": {
+    "APP_NAME": {
+      "type": "string",
+      "description": "Product name. Goes into <title>, the PWA manifest, og:site_name and every schema.org block.",
+      "default": "App"
+    },
+    "APP_SHORT_NAME": {
+      "type": "string",
+      "description": "Home-screen label. Around 12 characters — longer is truncated by the launcher, not wrapped.",
+      "default": "App"
+    },
+    "APP_DESCRIPTION": {
+      "type": "string",
+      "description": "One sentence. It is the fallback meta description and the manifest description, so write it for a search result.",
+      "default": "Application starter."
+    },
+    "SITE_URL": {
+      "type": "string",
+      "description": "Absolute public origin, no trailing slash. Canonical URLs, og:url and sitemap.xml are ignored by crawlers unless absolute.",
+      "default": "http://localhost"
+    },
+    "LANG": {
+      "type": "string",
+      "description": "Default document language, as a BCP 47 tag. Sets <html lang> and the manifest's lang.",
+      "default": "en"
+    },
+    "THEME_COLOR_LIGHT": {
+      "type": "string",
+      "description": "Browser UI colour in light mode, and the PWA splash background.",
+      "default": "#ffffff"
+    },
+    "THEME_COLOR_DARK": {
+      "type": "string",
+      "description": "Browser UI colour in dark mode.",
+      "default": "#09090b"
+    },
+    "PWA_CATEGORIES": {
+      "type": "string",
+      "description": "Manifest categories as a JSON array literal, e.g. [\"productivity\",\"business\"]. Substituted into vite.config.ts as written, so it must be valid JSON.",
+      "default": "[\"productivity\"]"
+    }
+  }
 }

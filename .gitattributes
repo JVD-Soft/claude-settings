@@ -1,6 +1,13 @@
 # Normalise line endings in the repository; check out per platform.
 * text=auto
 
+# The scaffolder copies these into projects byte for byte. Checked out with
+# CRLF on Windows, every scaffolded file would land with CRLF there and LF in
+# CI, and each project's git would report the whole tree as modified.
+plugins/jvd-frontend/skills/scaffold/template/**   text eol=lf
+plugins/jvd-frontend/skills/scaffold/starters/**   text eol=lf
+plugins/jvd-frontend/skills/scaffold/parts/**      text eol=lf
+
 # Executed as scripts — keep LF regardless of platform.
 *.mjs   text eol=lf
 *.js    text eol=lf

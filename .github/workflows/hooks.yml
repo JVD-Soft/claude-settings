@@ -1,7 +1,9 @@
-name: hooks
+name: ci
 
-# The read guard decides what an agent may read in every JVD-Soft project.
-# Nothing else exercises it.
+# Two things nothing else exercises: the read guard, which decides what an agent
+# may read in every JVD-Soft project, and the plugin structure, whose failures
+# are silent — a malformed frontmatter loads with empty metadata and the skill
+# simply stops activating.
 
 on:
   push:
@@ -9,14 +11,14 @@ on:
   pull_request:
 
 concurrency:
-  group: hooks-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  guard-read:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -25,3 +27,20 @@ jobs:
         with:
           node-version: 24
       - run: node plugins/jvd-frontend/hooks/guard-read.test.mjs
+      - run: node plugins/jvd-frontend/skills/scaffold/scripts/scaffold.test.mjs
+      - run: node scripts/validate-plugins.mjs
+
+  # Separate job: it needs the CLI, which is a network install and a moving
+  # target. Kept non-blocking so a change on their side cannot wedge our
+  # pipeline — validate-plugins.mjs above is the gate that must pass.
+  validate-official:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: claude plugin validate ./plugins/jvd-frontend --strict

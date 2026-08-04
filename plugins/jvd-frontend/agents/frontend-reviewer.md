@@ -1,6 +1,9 @@
 ---
-name: frontend-reviewer
+name: jvd-frontend-reviewer
 description: Reviews a frontend change against this stack's conventions before it is called done. Use after writing or editing anything under frontend/src, and before opening a PR. Checks design tokens, i18n parity, the eager/lazy line, the form pattern and the things lint cannot see.
+skills:
+  - jvd-frontend:forms-validation
+  - jvd-frontend:i18n-translations
 tools: Read, Grep, Glob, Bash
 ---
 

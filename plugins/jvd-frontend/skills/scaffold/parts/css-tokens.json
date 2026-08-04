@@ -1,0 +1,27 @@
+{
+  "_": [
+    "Design tokens that shipped components hard-depend on. OfflineNotice uses bg-warning,",
+    "ErrorFallback uses text-destructive-foreground: without these the component still",
+    "renders, just with no background and no contrast — a silent visual failure that no",
+    "test catches. Merged into src/index.css only when the variable is absent."
+  ],
+  "blocks": {
+    ":root": [
+      "--destructive-foreground: oklch(0.985 0.002 247.839);",
+      "/* The one non-slate accent, for a notice that is not an error. */",
+      "--warning: oklch(0.76 0.14 78);",
+      "--warning-foreground: oklch(0.27 0.05 78);"
+    ],
+    ".dark": [
+      "--destructive-foreground: oklch(0.985 0.002 247.839);",
+      "--warning: oklch(0.82 0.15 80);",
+      "--warning-foreground: oklch(0.22 0.04 80);"
+    ],
+    "@theme inline": [
+      "--color-destructive-foreground: var(--destructive-foreground);",
+      "--color-warning: var(--warning);",
+      "--color-warning-foreground: var(--warning-foreground);"
+    ]
+  },
+  "probe": "--warning"
+}
