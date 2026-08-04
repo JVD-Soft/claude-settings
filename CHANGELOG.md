@@ -11,6 +11,18 @@ know about — a hook that starts blocking something it allowed, a renamed skill
 
 ## jvd-frontend
 
+### 1.5.1
+- The starter's `API_URL` defaulted to the absolute `http://localhost:80/api`,
+  which made every request cross-origin the moment the app was opened at
+  `127.0.0.1` — `connect-src 'self'` then blocked the lot. Under Docker on WSL2
+  that is the normal case, because `localhost` resolves to `::1` there. The
+  default is now the relative `/api`, which is same-origin however the app is
+  reached.
+- New owned test `src/config/config.test.ts`: `API_URL` and `connect-src` are
+  one decision written in two files, and they used to fail apart silently — a
+  green build and a dead app. It parses the `add_header` line (not the comment
+  above it, which also says `connect-src`) and names the host to add.
+
 ### 1.5.0
 - `--brand` — renames a fork. New projects on this stack start as forks of
   `base_setup`, and on a fork the eight project values reach **nothing**:
