@@ -1,0 +1,9 @@
+Copyright (c) JVD-Soft. All rights reserved.
+
+This repository is proprietary and confidential. It is not open source, and no
+licence to use, copy, modify or distribute it is granted to anyone outside
+JVD-Soft or parties explicitly authorised in writing.
+
+`plugins/jvd-frontend/skills/` describes
+internal conventions and reference internal code. Treat their contents as
+confidential.

@@ -1,8 +1,12 @@
 {
   "name": "jvd-frontend",
-  "description": "Shared agent setup for the Laravel + React/Vite stack: a read guard that keeps build output out of context, format-on-edit, review and accessibility agents, and the skills both projects use.",
-  "version": "1.0.0",
+  "description": "Shared agent setup for the React/Vite side: a read guard that keeps build output out of context, format-on-edit, review, accessibility, testing and prerender agents, and the skills both projects use.",
+  "version": "1.1.0",
   "author": {
     "name": "JVD-Soft"
-  }
+  },
+  "homepage": "https://github.com/JVD-Soft/claude-settings",
+  "repository": "https://github.com/JVD-Soft/claude-settings",
+  "license": "UNLICENSED",
+  "keywords": ["react", "vite", "typescript", "tanstack-query", "shadcn"]
 }

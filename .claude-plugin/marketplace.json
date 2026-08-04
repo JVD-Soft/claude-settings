@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Internal Claude Code plugins for JVD-Soft projects.",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "plugins": [
     {
       "name": "jvd-frontend",
       "source": "./plugins/jvd-frontend",
-      "description": "Shared agent setup for the Laravel + React/Vite stack: read guard, format-on-edit, review and accessibility agents, and the skills both projects use."
+      "description": "React/Vite: read guard, format-on-edit, review + a11y + test + prerender agents, shared skills, and the MCP servers the stack needs."
     }
   ]
 }
