@@ -229,7 +229,10 @@ if (flag('brand')) {
     { key: 'THEME_COLOR_LIGHT', as: 'background_color', file: 'frontend/vite.config.ts', quote: 'js-double', find: /(\n\s+background_color: ")([^"]*)(")/g },
     { key: 'PWA_CATEGORIES', file: 'frontend/vite.config.ts', quote: 'raw', find: /(\n\s+categories: )(\[[^\]]*\])(,)/g },
 
-    { key: 'SITE_URL', file: 'frontend/scripts/prerender.mjs', quote: 'js-single', find: /(process\.env\.VITE_SITE_URL \?\? ')([^']*)(')/g },
+    // Anchored on `VITE_SITE_URL ?? '`, not on how it is read: the script moved
+    // from `process.env` to `loadEnv()` and the old anchor stopped matching,
+    // which --brand reports as a skip rather than an error.
+    { key: 'SITE_URL', file: 'frontend/scripts/prerender.mjs', quote: 'js-single', find: /(VITE_SITE_URL \?\? ')([^']*)(')/g },
     { key: 'SITE_URL', file: 'frontend/.env.example', quote: 'raw', find: /(^VITE_SITE_URL=)([^\n]*)()$/gm },
   ];
 
@@ -571,12 +574,13 @@ const mergeLocales = () => {
   }
 
   // Every other locale the project registered needs the same keys, and only a
-  // human can write them.
+  // human can write them. Directories only: `src/locales` also holds
+  // `locales.test.ts`, and a file read as a language name asks for
+  // `locales.test.ts/translation.json`.
   const known = new Set(readdirSync(partsDir + '/locales').map((f) => path.basename(f, '.json')));
-  for (const lang of readdirSync(localesDir)) {
-    if (!known.has(lang)) {
-      manual.push(`frontend/src/locales/${lang}/translation.json — add errors.* and pwa.* by hand; there is no template for "${lang}".`);
-    }
+  for (const entry of readdirSync(localesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || known.has(entry.name)) continue;
+    manual.push(`frontend/src/locales/${entry.name}/translation.json — add errors.* and pwa.* by hand; there is no template for "${entry.name}".`);
   }
 };
 

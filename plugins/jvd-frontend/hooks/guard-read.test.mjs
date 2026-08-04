@@ -41,6 +41,10 @@ const BLOCK = [
   'storybook-static/main.js',
   // package-manager and framework caches
   'frontend/.yarn/cache/react-npm-19.2.0.zip',
+  // `tsc -b` writes its cache beside the tsconfig, inside the source tree.
+  'frontend/.tsbuild/tsconfig.node.tsbuildinfo',
+  'frontend/tsconfig.tsbuildinfo',
+  'apps/web/tsconfig.app.tsbuildinfo',
   'backend/bootstrap/cache/config.php',
   'backend/storage/framework/views/x.php',
   'service/__pycache__/mod.cpython-312.pyc',
@@ -70,6 +74,7 @@ const ALLOW = [
   '.github/workflows/frontend.yml', // .github must not trip the .git rule
   'frontend/src/locales/uk/translation.json',
   'frontend/.yarnrc.yml', // config, not the .yarn cache directory
+  'frontend/tsconfig.json', // the config, not the .tsbuildinfo cache beside it
   // names that merely CONTAIN a blocked word must not trip it
   'backend/app/Services/VendorService.php',
   'frontend/src/pages/BuildPage.tsx',

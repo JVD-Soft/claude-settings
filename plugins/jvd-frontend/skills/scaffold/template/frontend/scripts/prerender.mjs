@@ -15,7 +15,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { build } from 'vite';
+import { build, loadEnv } from 'vite';
 
 const frontendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const distDir = path.join(frontendDir, 'dist');
@@ -28,15 +28,52 @@ const ssrDir = path.join(frontendDir, 'dist-ssr');
  */
 const ROUTES = ['/'];
 
-const SITE_URL = (process.env.VITE_SITE_URL ?? '{{SITE_URL}}').replace(/\/$/, '');
+/**
+ * `loadEnv`, not `process.env`. This script runs as a plain `node`, so it never
+ * sees `frontend/.env` — while the app half reads the same variable through
+ * `import.meta.env`, which Vite *does* fill from that file. Split like that, a
+ * correctly configured project builds pages whose canonical and og:url carry the
+ * real domain and a sitemap.xml that says the fallback, and every checker stays
+ * green. `loadEnv` also falls back to VITE_* already in the environment, so a
+ * value supplied by CI or compose still wins.
+ */
+const SITE_URL = (loadEnv('production', frontendDir, 'VITE_').VITE_SITE_URL ?? '{{SITE_URL}}').replace(
+  /\/$/,
+  '',
+);
+
+// A working local default is exactly why a placeholder reaches a deployed box
+// unnoticed: nothing else in the build has an opinion about it. Every
+// environment that is not a developer's machine is checked — staging publishes
+// canonical URLs and a sitemap too, and gets indexed for it.
+const LOCAL_ENVS = ['', 'local', 'development', 'test'];
+if (!LOCAL_ENVS.includes(process.env.APP_ENV ?? '') && /localhost|127\.0\.0\.1/.test(SITE_URL)) {
+  throw new Error(
+    `prerender: APP_ENV is "${process.env.APP_ENV}" but VITE_SITE_URL is still ${SITE_URL}. ` +
+      'canonical, og:url, sitemap.xml and the robots.txt Sitemap line would all ship pointing ' +
+      'at localhost. Set VITE_SITE_URL in frontend/.env on this environment.',
+  );
+}
 const BUILD_DATE = new Date().toISOString().slice(0, 10);
 
 const TITLE = /<title[^>]*>[\s\S]*?<\/title>/i;
 const DESCRIPTION = /<meta[^>]+name="description"[^>]*>/i;
 // JSON-LD is lifted with them: it is valid anywhere in the document, but a
 // crawler that only reads <head> should still find it.
-const HEAD_TAGS =
-  /<(?:title[^>]*>[\s\S]*?<\/title>|script[^>]*application\/ld\+json[^>]*>[\s\S]*?<\/script>|(?:meta|link)\b[^>]*?\/?>)/gi;
+/**
+ * `<title>`, `<meta>` and `<link>` only — JSON-LD is deliberately left where
+ * React rendered it, in the body.
+ *
+ * It used to be hoisted too, on the theory that a crawler reading only `<head>`
+ * should find it. The cost was hydration: `hydrateRoot` compares the client tree
+ * against the markup still in `#root`, and a `<script type="application/ld+json">`
+ * that has been moved out of it is a mismatch, which makes React discard the
+ * whole prerendered document and re-render — re-emitting every head tag as a
+ * duplicate. JSON-LD is valid anywhere in the document and Google reads it from
+ * the body.
+ * https://developers.google.com/search/docs/appearance/structured-data
+ */
+const HEAD_TAGS = /<(?:title[^>]*>[\s\S]*?<\/title>|(?:meta|link)\b[^>]*?\/?>)/gi;
 
 /**
  * React emits `<title>`/`<meta>`/`<link>` where they were rendered — hoisting

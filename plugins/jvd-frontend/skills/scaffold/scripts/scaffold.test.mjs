@@ -163,6 +163,18 @@ const run = (root, ...args) =>
   check('adds the pwa block', en.pwa.offline !== undefined);
   check('leaves unrelated keys alone', en.login === 'Sign in');
   check('reports a locale with no template', out.includes('locales/pl/translation.json'));
+  // src/locales holds locales.test.ts as well as the language directories. Read
+  // as a language name it asks the user to hand-write
+  // `locales.test.ts/translation.json`, which is not a path.
+  check(
+    'does not read a file in src/locales as a language',
+    !out.includes('locales.test.ts/translation.json'),
+    out,
+  );
+  check(
+    'writes the locale parity test',
+    existsSync(path.join(root, 'frontend/src/locales/locales.test.ts')),
+  );
 
   rmSync(root, { recursive: true, force: true });
 }
