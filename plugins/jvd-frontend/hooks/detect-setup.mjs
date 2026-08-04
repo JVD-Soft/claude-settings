@@ -69,14 +69,49 @@ try {
     'no Yarn 4 via packageManager — Yarn 1 cannot install Vitest at all',
   );
 
-  if (missing.length === 0) say('');
+  /**
+   * A fork of base_setup arrives with the baseline already in place and the
+   * template's own name still in it. Nothing else notices: the build is green,
+   * the tests pass, and the project ships with `<title>App</title>` and
+   * `"name":"App"` in its manifest. The eight project values cannot fix it on
+   * their own — the files they would land in already exist, so the scaffolder
+   * correctly leaves them alone. `--brand` is the mode that does.
+   *
+   * base_setup itself is exempt: it carries the template's name because it *is*
+   * the template, and warning it every session is how a report becomes noise.
+   * It opts out with `"identity": { "isTemplate": true }` in the stamp file.
+   */
+  const stampFile = path.join(root, 'frontend/.jvd-scaffold.json');
+  const isTemplate =
+    existsSync(stampFile) &&
+    JSON.parse(readFileSync(stampFile, 'utf8')).identity?.isTemplate === true;
 
-  say(
-    `This project's frontend is missing part of the JVD-Soft baseline:\n` +
-      missing.map((item) => `- ${item}`).join('\n') +
-      `\n\nThe jvd-frontend:scaffold skill installs all of it in one run. ` +
-      `Offer it if the user's task touches any of the above; do not run it unprompted.`,
-  );
+  const configFile = path.join(root, 'frontend/src/config/index.ts');
+  const unbranded =
+    !isTemplate &&
+    existsSync(configFile) &&
+    /NAME: 'App'|DESCRIPTION: 'Application starter\.'/.test(readFileSync(configFile, 'utf8'));
+
+  if (missing.length === 0 && !unbranded) say('');
+
+  const parts = [];
+  if (missing.length > 0) {
+    parts.push(
+      `This project's frontend is missing part of the JVD-Soft baseline:\n` +
+        missing.map((item) => `- ${item}`).join('\n') +
+        `\n\nThe jvd-frontend:scaffold skill installs all of it in one run.`,
+    );
+  }
+  if (unbranded) {
+    parts.push(
+      `This project still carries the template's identity — src/config/index.ts says ` +
+        `the app is called "App". It reaches <title>, the PWA manifest, og:site_name ` +
+        `and every schema.org block, and nothing else will flag it.\n` +
+        `\`node <plugin>/skills/scaffold/scripts/scaffold.mjs --brand --dry-run\` shows what would change.`,
+    );
+  }
+
+  say(`${parts.join('\n\n')}\n\nOffer this if the user's task touches any of it; do not run anything unprompted.`);
 } catch {
   process.exit(0);
 }

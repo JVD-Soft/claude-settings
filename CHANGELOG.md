@@ -11,6 +11,23 @@ know about — a hook that starts blocking something it allowed, a renamed skill
 
 ## jvd-frontend
 
+### 1.5.0
+- `--brand` — renames a fork. New projects on this stack start as forks of
+  `base_setup`, and on a fork the eight project values reach **nothing**:
+  `index.html`, `app.html` and `vite.config.ts` are seeded, `config/index.ts` is
+  a starter, so all four already exist and a normal run correctly leaves them
+  alone. Forks were shipping with `<title>App</title>` and `"name":"App"` in
+  their manifest, and no test looked at either.
+  Rewrites the same slots in place; refuses to run while `APP_NAME` is still
+  `App`; skips any anchor that does not match exactly once instead of guessing;
+  escapes per literal kind, so `Bob's Shop` works.
+- `SessionStart` reports an unbranded fork. `base_setup` opts out with
+  `"identity": { "isTemplate": true }` — it carries the template's name because
+  it is the template.
+- `/jvd-frontend:new-project` — the fork procedure, including the backend slots
+  `--brand` does not own (`backend/.env.example` `APP_NAME` also names the Docker
+  containers, so two forks left at the default collide).
+
 ### 1.4.0
 - `lib/formErrors.ts` (`applyApiErrors`) replaces `lib/applyServerErrors.ts` in
   the template. The old one set every key a 422 returned, including fields the

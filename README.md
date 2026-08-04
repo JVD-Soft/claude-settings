@@ -13,7 +13,8 @@
 
 | | |
 |---|---|
-| `skills/scaffold` | Поднимает фронтенд проекта до базовой линии стека: харнес Vitest, error boundaries, safeStorage, SEO и пререндер, PWA, заголовки nginx, CI, цели Makefile. ~35 файлов и 8 слияний одной командой. |
+| `skills/scaffold` | Поднимает фронтенд проекта до базовой линии стека: харнес Vitest, error boundaries, safeStorage, SEO и пререндер, PWA, заголовки nginx, CI, цели Makefile. ~35 файлов и 8 слияний одной командой. Режим `--brand` переименовывает форк. |
+| `commands/new-project` | Порядок заведения нового проекта: форк `base_setup` → `--brand` → бэкенд-слоты → `make init` → `make check`. |
 | `hooks/detect-setup.mjs` | `SessionStart`: говорит, чего из базовой линии не хватает. Молчит, когда всё на месте. |
 | `hooks/guard-read.mjs` | `PreToolUse`: не даёт прочитать сборку, зависимости, лок-файлы и бинарники целиком. 49 самотестов. |
 | `hooks/format-changed.mjs` | `PostToolUse`: `eslint --fix` на один изменённый файл. Раньше это была просьба к агенту не забыть. |
@@ -70,6 +71,20 @@
 в `userConfig` плагина. Claude Code спрашивает их при включении и отдаёт
 скаффолдеру через `CLAUDE_PLUGIN_OPTION_*` — редактировать шаблон под проект
 не нужно. Стек один, проекты разные: это ровно та граница между ними.
+
+## Новый проект
+
+Форк `base_setup`, а не пустой репозиторий: файлы, которые ставит скаффолдер,
+импортируют `@/api/apiClient`, `@/components/ui`, `@/lib/utils`,
+`@/providers/ThemeProvider` и `@/routes` — ничего из этого он не поставляет.
+На голом `yarn create vite` `yarn typecheck` падает сразу.
+
+Порядок — в `/jvd-frontend:new-project`. Ключевой шаг, который иначе теряется:
+**форк надо переименовать**. Восемь значений `userConfig` бьют в файлы, которые
+в форке уже существуют (`index.html`, `app.html`, `vite.config.ts` — seeded,
+`config/index.ts` — starter), поэтому обычный прогон их не трогает, и проект
+уезжает в прод с `<title>App</title>`. Это делает `--brand`; `SessionStart`
+напоминает, если забыли.
 
 ## Что сюда НЕ переносится
 

@@ -19,8 +19,13 @@
  *
  * Nothing is deleted, ever, and every run is idempotent.
  *
+ * `--brand` is a separate mode: it renames an existing project instead of
+ * scaffolding one, because the eight project values reach a fork through files
+ * that already exist and are therefore never written.
+ *
  * Usage:
  *   node scaffold.mjs [--dry-run] [--force] [--accept] [--root DIR] [--set KEY=VALUE]...
+ *   node scaffold.mjs --brand [--dry-run] [--root DIR] [--set KEY=VALUE]...
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -163,6 +168,172 @@ const STAMP = 'frontend/.jvd-scaffold.json';
 const stampFile = path.join(root, STAMP);
 const stamp = existsSync(stampFile) ? JSON.parse(readFileSync(stampFile, 'utf8')) : { files: {} };
 stamp.files ??= {};
+
+const writeStamp = () => {
+  if (dryRun) return;
+  stamp.updatedBy = 'jvd-frontend:scaffold';
+  mkdirSync(path.dirname(stampFile), { recursive: true });
+  writeFileSync(stampFile, `${JSON.stringify(stamp, null, 2)}\n`, 'utf8');
+};
+
+const section = (title, items) => {
+  if (items.length === 0) return;
+  console.log(`\n${title} (${items.length})`);
+  for (const item of items) console.log(`  ${item}`);
+};
+
+// --- brand ------------------------------------------------------------------
+
+if (flag('brand')) {
+  /**
+   * Renames a fork.
+   *
+   * The eight values reach a *new* project through the template. On a fork they
+   * reach nothing: index.html, app.html and vite.config.ts are seeded and
+   * config/index.ts is a starter, so all four already exist and the scaffolder
+   * correctly leaves them alone. Without this mode a fork ships with
+   * `<title>App</title>` and `"name":"App"` in its manifest, and no test looks
+   * at either.
+   *
+   * So this rewrites the same slots in place. It creates nothing and merges
+   * nothing — mixing that into a normal run would make a rename look like a
+   * scaffold.
+   */
+  const SHELLS = ['frontend/index.html', 'frontend/app.html'];
+
+  // Each slot: the value it carries, the file, and a pattern of exactly three
+  // groups — prefix, current value, suffix — so the value is replaced without
+  // the pattern having to reproduce it.
+  const SLOTS = [
+    ...SHELLS.flatMap((file) => [
+      { key: 'APP_NAME', file, quote: 'html-text', find: /(<title>)([^<]*)(<\/title>)/g },
+      { key: 'APP_DESCRIPTION', file, quote: 'html-attr', find: /(<meta name="description" content=")([^"]*)(")/g },
+      { key: 'LANG', file, quote: 'html-attr', find: /(<html lang=")([^"]*)(")/g },
+      { key: 'THEME_COLOR_LIGHT', file, quote: 'html-attr', find: /(<meta name="theme-color" media="\(prefers-color-scheme: light\)" content=")([^"]*)(")/g },
+      { key: 'THEME_COLOR_DARK', file, quote: 'html-attr', find: /(<meta name="theme-color" media="\(prefers-color-scheme: dark\)" content=")([^"]*)(")/g },
+    ]),
+
+    { key: 'APP_NAME', file: 'frontend/src/config/index.ts', quote: 'js-single', find: /(\n\s+NAME: ')([^']*)(')/g },
+    { key: 'APP_DESCRIPTION', file: 'frontend/src/config/index.ts', quote: 'js-single', find: /(\n\s+DESCRIPTION: ')([^']*)(')/g },
+    { key: 'SITE_URL', file: 'frontend/src/config/index.ts', quote: 'js-single', find: /(VITE_SITE_URL \?\? ')([^']*)(')/g },
+
+    // `\n\s+name: "` cannot match the short_name line: after the whitespace the
+    // next character is `s`, not `n`.
+    { key: 'APP_NAME', file: 'frontend/vite.config.ts', quote: 'js-double', find: /(\n\s+name: ")([^"]*)(")/g },
+    { key: 'APP_SHORT_NAME', file: 'frontend/vite.config.ts', quote: 'js-double', find: /(\n\s+short_name: ")([^"]*)(")/g },
+    { key: 'APP_DESCRIPTION', file: 'frontend/vite.config.ts', quote: 'js-double', find: /(\n\s+description: ")([^"]*)(")/g },
+    { key: 'LANG', file: 'frontend/vite.config.ts', quote: 'js-double', find: /(\n\s+lang: ")([^"]*)(")/g },
+    // Same value, two manifest fields — labelled so the report does not print
+    // the same line twice and look like a duplicate.
+    { key: 'THEME_COLOR_LIGHT', as: 'theme_color', file: 'frontend/vite.config.ts', quote: 'js-double', find: /(\n\s+theme_color: ")([^"]*)(")/g },
+    { key: 'THEME_COLOR_LIGHT', as: 'background_color', file: 'frontend/vite.config.ts', quote: 'js-double', find: /(\n\s+background_color: ")([^"]*)(")/g },
+    { key: 'PWA_CATEGORIES', file: 'frontend/vite.config.ts', quote: 'raw', find: /(\n\s+categories: )(\[[^\]]*\])(,)/g },
+
+    { key: 'SITE_URL', file: 'frontend/scripts/prerender.mjs', quote: 'js-single', find: /(process\.env\.VITE_SITE_URL \?\? ')([^']*)(')/g },
+    { key: 'SITE_URL', file: 'frontend/.env.example', quote: 'raw', find: /(^VITE_SITE_URL=)([^\n]*)()$/gm },
+  ];
+
+  /**
+   * The value lands inside a quoted literal, so it has to be escaped for the
+   * kind of literal it lands in. Refusing apostrophes instead would rule out
+   * half the plausible product names.
+   */
+  const escapeFor = (quote, raw) => {
+    switch (quote) {
+      case 'html-text':
+        return raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      case 'html-attr':
+        return raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      case 'js-single':
+        return raw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      case 'js-double':
+        return raw.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      default:
+        return raw;
+    }
+  };
+
+  // Branding to the template's own defaults is a no-op that reads as success.
+  if (vars.APP_NAME === DEFAULTS.APP_NAME) {
+    console.error(
+      'scaffold --brand: APP_NAME is still "App". Set the project\'s real name — in the\n' +
+        'plugin configuration, or with --set APP_NAME=… for a trial run. Renaming a fork to\n' +
+        'the template\'s default would report success and change nothing.',
+    );
+    process.exit(2);
+  }
+  try {
+    const categories = JSON.parse(vars.PWA_CATEGORIES);
+    if (!Array.isArray(categories)) throw new Error('not an array');
+  } catch {
+    console.error(`scaffold --brand: PWA_CATEGORIES must be a JSON array literal, got ${vars.PWA_CATEGORIES}`);
+    process.exit(2);
+  }
+
+  const changes = [];
+  const already = [];
+  const skipped = [];
+  const edits = new Map();
+
+  for (const slot of SLOTS) {
+    const target = path.join(root, slot.file);
+    if (!existsSync(target)) {
+      skipped.push(`${slot.file} — missing, so ${slot.as ?? slot.key} has nowhere to go here.`);
+      continue;
+    }
+
+    const label = `${slot.file} — ${slot.as ?? slot.key}`;
+    const before = edits.get(slot.file) ?? readFileSync(target, 'utf8');
+    const matches = [...before.matchAll(slot.find)];
+    if (matches.length !== 1) {
+      // Zero means the file was rewritten past recognition; two means the
+      // pattern is ambiguous. Guessing which one to take is worse than saying so.
+      skipped.push(
+        `${label}: ${matches.length === 0 ? 'no anchor found' : `${matches.length} anchors match`}. Set it by hand.`,
+      );
+      continue;
+    }
+
+    const current = matches[0][2];
+    const wanted = escapeFor(slot.quote, vars[slot.key]);
+    if (current === wanted) {
+      already.push(label);
+      continue;
+    }
+
+    edits.set(slot.file, before.replace(slot.find, (_m, prefix, _old, suffix) => `${prefix}${wanted}${suffix}`));
+    changes.push(`${label}: ${JSON.stringify(current)} → ${JSON.stringify(wanted)}`);
+  }
+
+  if (!dryRun) {
+    for (const [relative, content] of edits) {
+      writeFileSync(path.join(root, relative), content, 'utf8');
+    }
+    stamp.identity = { ...vars };
+    writeStamp();
+  }
+
+  console.log(`scaffold --brand${dryRun ? ' --dry-run' : ''} → ${root}`);
+  section(dryRun ? 'would rewrite' : 'rewritten', changes);
+  section('already correct', already);
+  section('could not place', skipped);
+
+  // Outside the frontend, so outside this plugin — but a fork that skips them
+  // collides with its own template: docker-compose derives container names from
+  // ${APP_NAME}, so two unrenamed forks fight over the same containers.
+  section('not touched — backend and repo identity, do these by hand', [
+    'backend/.env.example — APP_NAME (also names the Docker containers via ${APP_NAME}-backend), APP_URL, DB_DATABASE',
+    'README.md, AGENTS.md — they describe this codebase by name',
+    'git remote — a fresh fork still points at the template',
+  ]);
+
+  console.log(
+    dryRun
+      ? '\nnothing was written.'
+      : '\nnext: cd frontend && yarn test && yarn build — shells.test.ts is the guard that index.html and app.html stayed in step.',
+  );
+  process.exit(0);
+}
 
 // --- own + seed -------------------------------------------------------------
 
@@ -544,17 +715,7 @@ const DECISIONS = [
   'PWA manifest shortcuts and screenshots are product decisions; screenshots are what turn the install prompt into a rich one.',
 ];
 
-const section = (title, items) => {
-  if (items.length === 0) return;
-  console.log(`\n${title} (${items.length})`);
-  for (const item of items) console.log(`  ${item}`);
-};
-
-if (!dryRun) {
-  stamp.updatedBy = 'jvd-frontend:scaffold';
-  mkdirSync(path.dirname(stampFile), { recursive: true });
-  writeFileSync(stampFile, `${JSON.stringify(stamp, null, 2)}\n`, 'utf8');
-}
+writeStamp();
 
 console.log(`scaffold${dryRun ? ' --dry-run' : ''}${force ? ' --force' : ''} → ${root}`);
 console.log(

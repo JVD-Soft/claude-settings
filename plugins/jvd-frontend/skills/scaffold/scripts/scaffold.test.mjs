@@ -280,6 +280,153 @@ const run = (root, ...args) =>
   rmSync(root, { recursive: true, force: true });
 }
 
+// --- brand ------------------------------------------------------------------
+
+/** A scaffolded project, which is what a fork is: every slot already filled. */
+const branded = () => {
+  const root = fixture();
+  run(root);
+  return root;
+};
+
+const BRAND = [
+  '--brand',
+  '--set', 'APP_NAME=Acme Wholesale',
+  '--set', 'APP_SHORT_NAME=Acme',
+  '--set', 'APP_DESCRIPTION=Wholesale ordering.',
+  '--set', 'SITE_URL=https://acme.example.com',
+  '--set', 'LANG=uk',
+  '--set', 'THEME_COLOR_LIGHT=#fefefe',
+  '--set', 'THEME_COLOR_DARK=#101010',
+  '--set', 'PWA_CATEGORIES=["business","productivity"]',
+];
+
+{
+  const root = branded();
+  run(root, ...BRAND);
+
+  for (const shell of ['frontend/index.html', 'frontend/app.html']) {
+    const html = read(root, shell);
+    check(`${shell}: title`, html.includes('<title>Acme Wholesale</title>'), html.match(/<title>.*<\/title>/)?.[0]);
+    check(`${shell}: description`, html.includes('content="Wholesale ordering."'));
+    check(`${shell}: lang`, html.includes('<html lang="uk">'));
+    check(`${shell}: light theme`, html.includes('(prefers-color-scheme: light)" content="#fefefe"'));
+    check(`${shell}: dark theme`, html.includes('(prefers-color-scheme: dark)" content="#101010"'));
+  }
+
+  const config = read(root, 'frontend/src/config/index.ts');
+  check('config: NAME', config.includes("NAME: 'Acme Wholesale'"));
+  check('config: DESCRIPTION', config.includes("DESCRIPTION: 'Wholesale ordering.'"));
+  check('config: SITE_URL', config.includes("VITE_SITE_URL ?? 'https://acme.example.com'"));
+
+  const vite = read(root, 'frontend/vite.config.ts');
+  check('vite: name', vite.includes('name: "Acme Wholesale"'));
+  check('vite: short_name untouched by the name slot', vite.includes('short_name: "Acme"'), vite.match(/short_name: ".*"/)?.[0]);
+  check('vite: description', vite.includes('description: "Wholesale ordering."'));
+  check('vite: lang', vite.includes('lang: "uk"'));
+  check('vite: theme_color', vite.includes('theme_color: "#fefefe"'));
+  check('vite: background_color', vite.includes('background_color: "#fefefe"'));
+  check('vite: categories', vite.includes('categories: ["business","productivity"]'));
+
+  check('prerender: SITE_URL', read(root, 'frontend/scripts/prerender.mjs').includes("?? 'https://acme.example.com'"));
+  check('env: SITE_URL', read(root, 'frontend/.env.example').includes('VITE_SITE_URL=https://acme.example.com'));
+
+  const identity = JSON.parse(read(root, 'frontend/.jvd-scaffold.json')).identity;
+  check('records the identity it applied', identity?.APP_NAME === 'Acme Wholesale');
+
+  rmSync(root, { recursive: true, force: true });
+}
+
+{
+  const root = branded();
+  run(root, ...BRAND);
+  const second = run(root, ...BRAND);
+  check('a second brand rewrites nothing', !/\nrewritten \(/.test(second), second.split('\n').find((l) => l.startsWith('rewritten')));
+  check('and says the slots are already correct', second.includes('already correct'));
+  rmSync(root, { recursive: true, force: true });
+}
+
+{
+  const root = branded();
+  const out = run(root, '--brand', '--dry-run', '--set', 'APP_NAME=Acme');
+  check('--dry-run reports old → new', out.includes('would rewrite') && out.includes('"App" → "Acme"'));
+  check('--dry-run rewrites nothing', read(root, 'frontend/index.html').includes('<title>App</title>'));
+  rmSync(root, { recursive: true, force: true });
+}
+
+{
+  // Branding to the template's own default is a no-op that reads as success.
+  const root = branded();
+  let code = 0;
+  let stderr = '';
+  try {
+    execFileSync(process.execPath, [scaffold, '--root', root, '--brand'], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: '' },
+    });
+  } catch (error) {
+    code = error.status;
+    stderr = error.stderr ?? '';
+  }
+  check('refuses to brand to the default name', code === 2, `exit ${code}`);
+  check('and says why', stderr.includes('still "App"'));
+  rmSync(root, { recursive: true, force: true });
+}
+
+{
+  const root = branded();
+  let code = 0;
+  try {
+    execFileSync(process.execPath, [scaffold, '--root', root, '--brand', '--set', 'APP_NAME=Acme', '--set', 'PWA_CATEGORIES=business'], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: '' },
+    });
+  } catch (error) {
+    code = error.status;
+  }
+  check('rejects PWA_CATEGORIES that is not a JSON array', code === 2, `exit ${code}`);
+  rmSync(root, { recursive: true, force: true });
+}
+
+{
+  // A name with an apostrophe is ordinary; refusing it would be the bug.
+  const root = branded();
+  run(root, '--brand', '--set', "APP_NAME=Bob's Shop", '--set', 'APP_DESCRIPTION=Tools & parts');
+
+  check('escapes the apostrophe for a JS literal', read(root, 'frontend/src/config/index.ts').includes("NAME: 'Bob\\'s Shop'"));
+  check('escapes the ampersand for HTML', read(root, 'frontend/index.html').includes('content="Tools &amp; parts"'));
+  check('leaves the apostrophe alone in HTML text', read(root, 'frontend/index.html').includes("<title>Bob's Shop</title>"));
+
+  rmSync(root, { recursive: true, force: true });
+}
+
+{
+  const root = branded();
+  writeFileSync(path.join(root, 'frontend/index.html'), '<html><body>rewritten past recognition</body></html>', 'utf8');
+  const out = run(root, '--brand', '--set', 'APP_NAME=Acme');
+
+  check('reports a slot it cannot place', out.includes('could not place') && out.includes('no anchor found'));
+  check('and still brands the files it can', read(root, 'frontend/app.html').includes('<title>Acme</title>'));
+  check('names the backend slots it does not own', out.includes('backend/.env.example'));
+
+  rmSync(root, { recursive: true, force: true });
+}
+
+{
+  const root = branded();
+  const shell = path.join(root, 'frontend/app.html');
+  // Two titles: which one is the app's is not something to guess.
+  writeFileSync(shell, `${read(root, 'frontend/app.html')}\n<title>second</title>`, 'utf8');
+  const out = run(root, '--brand', '--set', 'APP_NAME=Acme');
+
+  check('refuses an ambiguous anchor', out.includes('2 anchors match'));
+  check('and leaves that file alone', readFileSync(shell, 'utf8').includes('<title>App</title>'));
+
+  rmSync(root, { recursive: true, force: true });
+}
+
 // --- no project -------------------------------------------------------------
 
 {

@@ -23,6 +23,7 @@ Read the report, then run it for real without `--dry-run`.
 | `--dry-run` | Prints the plan, writes nothing. |
 | `--force` | Takes the template's version of seeded files. Only when the project's copy is a stock Vite default or a stale baseline — never to silence a `reconcile` line you have not read. |
 | `--accept` | Keeps the project's version and records the template version it was compared against. For a file the project owns on purpose — its own routes, its own manifest. The line stops repeating; a *later* template change reports again. |
+| `--brand` | A separate mode: renames an existing project. See below. |
 | `--root DIR` | Where the project is. Found automatically from `frontend/package.json`. |
 | `--set KEY=VALUE` | Overrides one variable, for a trial run. |
 
@@ -48,6 +49,31 @@ next run agrees.
 `frontend/.jvd-scaffold.json` records which template version each seeded file
 came from. It is how a later run tells "the project edited this" from "the
 project predates this template" — commit it.
+
+## Renaming a fork — `--brand`
+
+New projects on this stack start as forks of `base_setup`, which means the
+baseline is already there and **the eight values reach nothing**: `index.html`,
+`app.html` and `vite.config.ts` are seeded and `config/index.ts` is a starter, so
+all four already exist and a normal run correctly leaves them alone. A fork ships
+with `<title>App</title>` and `"name":"App"` in its manifest, and no test looks
+at either.
+
+```bash
+node ${CLAUDE_SKILL_DIR}/scripts/scaffold.mjs --brand --dry-run
+```
+
+Rewrites those same slots in place, and nothing else — it creates no files and
+merges nothing. It refuses to run while `APP_NAME` is still `App`, skips any slot
+whose anchor does not match exactly once rather than guessing, and reports the
+backend slots it does not own (`backend/.env.example`, which also names the
+Docker containers).
+
+`src/test/shells.test.ts` is the safety net: it asserts `index.html` and
+`app.html` still have identical heads, so a rename that reached one shell and not
+the other fails a test that already exists.
+
+For the whole fork procedure use `/jvd-frontend:new-project`.
 
 ## After the run
 

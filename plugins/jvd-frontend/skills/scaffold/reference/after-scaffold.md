@@ -17,6 +17,25 @@ Most of it can be done in any order. Three cannot:
    manifest is generated during the build. A fallback document written after
    the build is never precached, and offline navigation fails.
 
+## If this project is a fork
+
+New projects start as forks of `base_setup`, so the baseline arrives already
+installed — and so does the template's identity. Run `--brand` before anything
+else; the eight project values cannot land through a normal run, because every
+file they would land in already exists.
+
+`--brand` covers the frontend. These it reports and does not touch:
+
+- **`backend/.env.example`** — `APP_NAME`, `APP_URL`, `DB_DATABASE`. `APP_NAME`
+  also names the Docker containers through `${APP_NAME}-backend`, so two forks
+  left at the default fight over the same containers on one machine.
+- **`README.md`, `AGENTS.md`** — they describe this codebase by name.
+- **`git remote`** — a fresh clone still points at the template.
+
+`base_setup` itself is the exception: it keeps the template's name because it is
+the template, and opts out of the session-start reminder with
+`"identity": { "isTemplate": true }` in `frontend/.jvd-scaffold.json`.
+
 ## The decisions
 
 ### `entry-prerender.tsx` — provider stack
