@@ -41,6 +41,33 @@ const sharedRules = {
   "import/first": "error",
   "import/newline-after-import": "error",
   "import/no-duplicates": "error",
+
+  // Two rules for two bugs that already shipped, both of which look like
+  // working code and fail silently at runtime.
+  "no-restricted-syntax": [
+    "error",
+    {
+      // A <form> without noValidate never submits when a field fails the
+      // browser's own constraint validation: the submit event is suppressed,
+      // react-hook-form never runs, and the translated zod message can never
+      // appear. The button does nothing and nothing is logged.
+      selector: "JSXOpeningElement[name.name='form']:not(:has(JSXAttribute[name.name='noValidate']))",
+      message:
+        "Add noValidate to <form>. Without it the browser's validation blocks the submit event, zod never runs, and the button silently does nothing.",
+    },
+  ],
+  "no-restricted-globals": [
+    "error",
+    {
+      name: "localStorage",
+      message:
+        "Use safeStorage from @/lib/storage. localStorage throws in private mode and does not exist under the build-time prerender, where i18n reads it at module scope.",
+    },
+    {
+      name: "sessionStorage",
+      message: "Use safeStorage from @/lib/storage — same reason as localStorage.",
+    },
+  ],
 };
 
 export default [
@@ -124,6 +151,12 @@ export default [
     },
   },
 
+  // safeStorage is the wrapper itself, so it has to reach the API it wraps.
+  {
+    files: ["src/lib/storage.ts"],
+    rules: { "no-restricted-globals": "off" },
+  },
+
   // Tests and test helpers. `recommendedTypeChecked` sees RTL matchers, mocked
   // modules and JSON fixtures as `any`-shaped and buries real findings under
   // no-unsafe-* noise. The guarantee those rules buy in application code isn't
@@ -139,6 +172,10 @@ export default [
       "@typescript-eslint/no-unsafe-return": "off",
       "@typescript-eslint/unbound-method": "off",
       "react-refresh/only-export-components": "off",
+      // A test asserting what actually landed in storage has to read storage.
+      // The rule exists to stop application code depending on an API that
+      // throws in private mode; a test is where that is verified, not violated.
+      "no-restricted-globals": "off",
     },
   },
 
