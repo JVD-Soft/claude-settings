@@ -1,12 +1,12 @@
-﻿import { readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
 /**
  * `src/routes.tsx` and `scripts/prerender.mjs` have to agree, and nothing makes
- * them. Both files say so in a comment вЂ” "see src/routes.tsx, where the same
- * line is drawn" вЂ” which is the shape of a rule with no enforcement behind it.
+ * them. Both files say so in a comment — "see src/routes.tsx, where the same
+ * line is drawn" — which is the shape of a rule with no enforcement behind it.
  *
  * `assertRendered` in prerender.mjs already fails the build when a prerendered
  * route falls back to Suspense, so the lazy-page case is covered at build time.
@@ -67,7 +67,7 @@ const guardedPaths = routeEntries.filter((entry) => entry.guarded).map((entry) =
 /**
  * robots.txt matches by PREFIX, not by equality: `Disallow: /me` covers
  * /me/orders/42 without listing it, and `Disallow: /supplier` also covers
- * /suppliers вЂ” a public page nobody meant to block. A trailing `$` anchors the
+ * /suppliers — a public page nobody meant to block. A trailing `$` anchors the
  * rule to the whole path, which is the way out of that collision. Both
  * directions below depend on modelling all of it correctly.
  */
@@ -76,7 +76,7 @@ const disallowedBy = (route: string): string | undefined =>
     rule.endsWith('$') ? route === rule.slice(0, -1) : route.startsWith(rule),
   );
 
-describe('routes.tsx в†” prerender.mjs', () => {
+describe('routes.tsx ↔ prerender.mjs', () => {
   it('parses both files', () => {
     // A silent parse failure would make every assertion below vacuously true.
     expect(routeEntries.length).toBeGreaterThan(0);
@@ -108,7 +108,7 @@ describe('routes.tsx в†” prerender.mjs', () => {
   /**
    * The expensive direction. A prerendered route exists so crawlers get real
    * HTML; a Disallow prefix that happens to cover it throws that away, and
-   * nothing else in the build notices вЂ” the page is still generated, still
+   * nothing else in the build notices — the page is still generated, still
    * deployed, still correct, and still never indexed.
    */
   it('disallows no prerendered route', () => {
