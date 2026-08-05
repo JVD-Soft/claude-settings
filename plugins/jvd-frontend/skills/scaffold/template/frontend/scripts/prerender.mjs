@@ -58,8 +58,6 @@ const BUILD_DATE = new Date().toISOString().slice(0, 10);
 
 const TITLE = /<title[^>]*>[\s\S]*?<\/title>/i;
 const DESCRIPTION = /<meta[^>]+name="description"[^>]*>/i;
-// JSON-LD is lifted with them: it is valid anywhere in the document, but a
-// crawler that only reads <head> should still find it.
 /**
  * `<title>`, `<meta>` and `<link>` only — JSON-LD is deliberately left where
  * React rendered it, in the body.
@@ -69,8 +67,8 @@ const DESCRIPTION = /<meta[^>]+name="description"[^>]*>/i;
  * against the markup still in `#root`, and a `<script type="application/ld+json">`
  * that has been moved out of it is a mismatch, which makes React discard the
  * whole prerendered document and re-render — re-emitting every head tag as a
- * duplicate. JSON-LD is valid anywhere in the document and Google reads it from
- * the body.
+ * duplicate, the exact problem hoisting was part of solving. JSON-LD is valid
+ * anywhere in the document and Google reads it from the body.
  * https://developers.google.com/search/docs/appearance/structured-data
  */
 const HEAD_TAGS = /<(?:title[^>]*>[\s\S]*?<\/title>|(?:meta|link)\b[^>]*?\/?>)/gi;

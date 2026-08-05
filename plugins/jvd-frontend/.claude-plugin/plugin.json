@@ -1,7 +1,7 @@
 {
   "name": "jvd-frontend",
   "description": "Shared setup for the React/Vite side of the JVD-Soft stack: a scaffolder that brings a project up to the baseline, a read guard that keeps build output out of context, format-on-edit, and the review, accessibility, testing and prerender agents both projects use.",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "author": {
     "name": "JVD-Soft"
   },
