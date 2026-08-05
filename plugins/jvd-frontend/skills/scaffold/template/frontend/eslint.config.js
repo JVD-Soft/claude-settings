@@ -68,6 +68,23 @@ const sharedRules = {
       message: "Use safeStorage from @/lib/storage — same reason as localStorage.",
     },
   ],
+
+  // The `@/*` alias is the only way to reach another module. A `../../..` chain
+  // keeps resolving after either file moves — to a different module, or to one
+  // that happens to exist — so the breakage surfaces as behaviour, not as an
+  // import error. Sibling `./` imports are fine and stay allowed.
+  "no-restricted-imports": [
+    "error",
+    {
+      patterns: [
+        {
+          group: ["../*", "../**"],
+          message:
+            "Import through the @/* alias (tsconfig paths → src/*), not a parent-relative path. A ../../.. chain still resolves after a file moves, so it breaks silently.",
+        },
+      ],
+    },
+  ],
 };
 
 export default [
@@ -192,6 +209,11 @@ export default [
       // not adapted to the compiler rules; restructuring it here would be
       // undone by the next `npx shadcn add`.
       "react-hooks/set-state-in-effect": "off",
+      // Upstream emits `../../lib/utils` in every primitive — seven of them do
+      // today. Rewriting those to `@/lib/utils` is exactly what the next
+      // `npx shadcn add` would undo, so the alias rule stops at the vendor
+      // layer. Our own code is still held to it.
+      "no-restricted-imports": "off",
     },
   },
 ];
