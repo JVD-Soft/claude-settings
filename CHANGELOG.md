@@ -9,6 +9,25 @@ Bump the **minor** for a new agent, skill, command or hook; the **patch** for
 wording; the **major** when existing behaviour changes in a way someone has to
 know about — a hook that starts blocking something it allowed, a renamed skill.
 
+## jvd-backend
+
+### 1.0.0
+
+New plugin. `laravel-api-endpoint` moved here from `base_setup/.claude/skills/`,
+where it was maintained per project.
+
+- **Why it moved:** the skill turned out to describe the *stack's* conventions —
+  the response envelope, thin controllers over services, FormRequest validation,
+  numeric role levels, `lang/` parity — none of which vary between projects.
+  Keeping a copy in each repo was the same silent-divergence problem this
+  marketplace exists to solve. Project-specific state stayed behind: the skill
+  now sends you to the project's own `backend/AGENTS.md` for what is currently
+  broken, instead of linking into a tree it can no longer see.
+- **Its own plugin, not a `jvd-frontend` skill.** That plugin's name, keywords
+  and `shadcn` MCP server are React-specific; a backend-only project would have
+  had to enable all of it to get one Laravel skill.
+- No hooks, agents or MCP servers here — those stay in `jvd-frontend`.
+
 ## jvd-frontend
 
 ### 2.0.0

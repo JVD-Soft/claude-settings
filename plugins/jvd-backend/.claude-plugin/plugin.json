@@ -1,0 +1,18 @@
+{
+  "name": "jvd-backend",
+  "description": "Shared setup for the Laravel side of the JVD-Soft stack: the response envelope, thin controllers over services, FormRequest validation, the numeric role guard and the lang/ parity rules that every project's API is expected to follow.",
+  "version": "1.0.0",
+  "author": {
+    "name": "JVD-Soft"
+  },
+  "homepage": "https://github.com/JVD-Soft/claude-settings",
+  "repository": "https://github.com/JVD-Soft/claude-settings",
+  "license": "UNLICENSED",
+  "keywords": [
+    "laravel",
+    "php",
+    "filament",
+    "sanctum",
+    "api"
+  ]
+}

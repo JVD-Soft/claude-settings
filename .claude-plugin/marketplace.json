@@ -5,13 +5,18 @@
   },
   "metadata": {
     "description": "Internal Claude Code plugins for JVD-Soft projects.",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "plugins": [
     {
       "name": "jvd-frontend",
       "source": "./plugins/jvd-frontend",
       "description": "React/Vite: read guard, format-on-edit, review + a11y + test + prerender agents, shared skills, and the MCP servers the stack needs."
+    },
+    {
+      "name": "jvd-backend",
+      "source": "./plugins/jvd-backend",
+      "description": "Laravel: the response envelope, thin controllers over services, FormRequest validation, the numeric role guard and lang/ parity."
     }
   ]
 }
