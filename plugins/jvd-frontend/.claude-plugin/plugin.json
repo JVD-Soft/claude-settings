@@ -1,8 +1,7 @@
 {
   "name": "jvd-frontend",
-  "displayName": "JVD Frontend",
   "description": "Shared setup for the React/Vite side of the JVD-Soft stack: a scaffolder that brings a project up to the baseline, a read guard that keeps build output out of context, format-on-edit, and the review, accessibility, testing and prerender agents both projects use.",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": {
     "name": "JVD-Soft"
   },
@@ -16,47 +15,55 @@
     "tanstack-query",
     "shadcn"
   ],
-  "dependencies": {
-    "typescript-lsp@claude-plugins-official": "*"
-  },
+  "dependencies": [
+    "typescript-lsp@claude-plugins-official"
+  ],
   "userConfig": {
     "APP_NAME": {
       "type": "string",
+      "title": "Product name",
       "description": "Product name. Goes into <title>, the PWA manifest, og:site_name and every schema.org block.",
       "default": "App"
     },
     "APP_SHORT_NAME": {
       "type": "string",
+      "title": "Home-screen label",
       "description": "Home-screen label. Around 12 characters — longer is truncated by the launcher, not wrapped.",
       "default": "App"
     },
     "APP_DESCRIPTION": {
       "type": "string",
+      "title": "One-sentence description",
       "description": "One sentence. It is the fallback meta description and the manifest description, so write it for a search result.",
       "default": "Application starter."
     },
     "SITE_URL": {
       "type": "string",
+      "title": "Public origin",
       "description": "Absolute public origin, no trailing slash. Canonical URLs, og:url and sitemap.xml are ignored by crawlers unless absolute.",
       "default": "http://localhost"
     },
     "LANG": {
       "type": "string",
+      "title": "Default language",
       "description": "Default document language, as a BCP 47 tag. Sets <html lang> and the manifest's lang.",
       "default": "en"
     },
     "THEME_COLOR_LIGHT": {
       "type": "string",
+      "title": "Theme colour (light)",
       "description": "Browser UI colour in light mode, and the PWA splash background.",
       "default": "#ffffff"
     },
     "THEME_COLOR_DARK": {
       "type": "string",
+      "title": "Theme colour (dark)",
       "description": "Browser UI colour in dark mode.",
       "default": "#09090b"
     },
     "PWA_CATEGORIES": {
       "type": "string",
+      "title": "PWA categories",
       "description": "Manifest categories as a JSON array literal, e.g. [\"productivity\",\"business\"]. Substituted into vite.config.ts as written, so it must be valid JSON.",
       "default": "[\"productivity\"]"
     }
