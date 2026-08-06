@@ -1,7 +1,7 @@
 {
   "name": "jvd-backend",
-  "description": "Shared setup for the Laravel side of the JVD-Soft stack: the response envelope, thin controllers over services, FormRequest validation, the numeric role guard and the lang/ parity rules that every project's API is expected to follow.",
-  "version": "1.0.0",
+  "description": "Shared setup for the Laravel side of the JVD-Soft stack: the response envelope, thin controllers over services, FormRequest validation, the numeric role guard and lang/ parity, plus a read guard, format-on-edit, a baseline detector and the review, testing and static-analysis agents both projects use.",
+  "version": "1.1.0",
   "author": {
     "name": "JVD-Soft"
   },

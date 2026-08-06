@@ -174,8 +174,14 @@ __('crud.updated', ['entity' => __('entity.order')])   // compose, don't write s
 - `auth.php` — the auth-flow messages `AuthController` returns.
 
 Add the key to **every** `lang/<locale>/` directory in the same change — today
-`lang/en/` and `lang/uk/`, which are at full parity. A missing key renders as
-the literal key string at runtime, silently, and nothing will catch it for you.
+`lang/en/` and `lang/uk/`. A missing key renders as the literal key string at
+runtime, silently: no exception, no log line, no failing test.
+
+Do not assume the locales currently match. They drift, and file-level drift is
+the common shape — a whole file translated in one locale and never in the other.
+This plugin's `SessionStart` hook reports that gap at the top of the session,
+and `jvd-backend-test-writer` carries a parity test that catches it at the key
+level, which is the only thing that catches it for good.
 
 Locale comes from the `Accept-Language` header via `SetLocaleMiddleware`, an
 exact match against its `LOCALES` allowlist (`en`, `uk`). Adding a language
@@ -215,11 +221,14 @@ php artisan test --filter=OrderTest    # write the test — it is the only signa
 composer analyse                       # must be green; run it in the container
 ```
 
-In these projects the existing suite proves nothing (it is effectively empty)
-and `pint --test` has a pre-existing backlog — the project's `backend/AGENTS.md`
-states the current status of both. So **your new test is the only real signal**
-on this change. Report the tests *you* ran, and don't reformat the whole tree in
-a feature diff.
+`/jvd-backend:check` runs all three in the container in one go.
+
+The three do not carry the same weight. `pint --test` has a pre-existing
+backlog, so a failure there is only yours if it names a file you touched — and
+don't reformat the whole tree in a feature diff to clear it. The suite's
+coverage varies by project and by area; the project's `backend/AGENTS.md` states
+where it actually stands. Either way **your new test is the signal on your
+change** — report the tests *you* ran, not that the suite was green.
 
 `composer analyse` (PHPStan level 5 + Larastan, **container only** — from the
 host it silently checks nothing) is green, so any error there is yours.

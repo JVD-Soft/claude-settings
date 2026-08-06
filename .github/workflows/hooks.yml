@@ -28,6 +28,8 @@ jobs:
           node-version: 24
       - run: node plugins/jvd-frontend/hooks/guard-read.test.mjs
       - run: node plugins/jvd-frontend/skills/scaffold/scripts/scaffold.test.mjs
+      - run: node plugins/jvd-backend/hooks/guard-read.test.mjs
+      - run: node plugins/jvd-backend/hooks/detect-setup.test.mjs
       - run: node scripts/validate-plugins.mjs
 
   # Separate job: it needs the CLI, which is a network install and a moving
@@ -44,3 +46,4 @@ jobs:
           node-version: 24
       - run: npm install -g @anthropic-ai/claude-code
       - run: claude plugin validate ./plugins/jvd-frontend --strict
+      - run: claude plugin validate ./plugins/jvd-backend --strict

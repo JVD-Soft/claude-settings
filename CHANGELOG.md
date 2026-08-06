@@ -11,6 +11,67 @@ know about — a hook that starts blocking something it allowed, a renamed skill
 
 ## jvd-backend
 
+### 1.1.0
+
+The plugin was one skill. It now carries the same shape as `jvd-frontend` —
+hooks, agents, a gate command and an MCP server — because a backend-only project
+enabling `jvd-backend` alone was getting none of the machinery that makes the
+frontend half work.
+
+- **`hooks/detect-setup.mjs` (`SessionStart`).** Reports what the backend
+  baseline is missing: no `phpstan.neon`, no Larastan, no Pint, no
+  `app/Services/`, a suite holding nothing but the stock `ExampleTest`, no CI
+  workflow for the backend, and a `Makefile` whose gate covers the frontend
+  only. Silent when the baseline is in place.
+
+  The check that earns the hook on its own is **`lang/` parity**. A key present
+  in one locale directory and absent from another renders as the literal key
+  string at runtime — no exception, no log line, no failing test, and nothing
+  else in the stack looks at it. Pointed at a real project it immediately found
+  three files present in `lang/en/` and absent from `lang/uk/`, none of which
+  anything had reported. File-level parity is the cheap version of the check;
+  comparing keys would mean evaluating PHP, and `jvd-backend-test-writer` now
+  carries the in-project test that does it properly.
+
+- **`hooks/guard-read.mjs` (`PreToolUse`) — a byte-identical copy of the
+  frontend's.** A plugin can only ship files inside its own directory, so a
+  backend-only project had no read guard at all and could burn a context window
+  on `vendor/autoload.php`. The duplication is the deliberate cost; the two
+  files must be edited together. Its self-test is *not* a copy — the cases cover
+  the layout the frontend suite never sees, Laravel at the repo root, where
+  `storage/`, `bootstrap/cache/` and `vendor/` sit one segment from the top.
+
+- **`hooks/format-changed.mjs` (`PostToolUse`).** Pint on the single edited file.
+  Unlike PHPStan, Pint is safe to run from the host — it rewrites syntax in the
+  file it was handed rather than reflecting into `vendor/`. Scope stays at one
+  file deliberately: `pint --test` has a pre-existing backlog, and a hook that
+  fixed everything it touched would bury the change in a thousand-line diff.
+
+- **`agents/jvd-backend-reviewer`**, **`jvd-backend-test-writer`** and
+  **`jvd-phpstan-doctor`**. The test writer leads with *PHPUnit, not Pest* —
+  `pestphp/pest-plugin` sits in `composer.json`'s `allow-plugins` with no Pest
+  installed, and a Pest-style test is silently not collected. The PHPStan doctor
+  is the counterpart of `jvd-prerender-doctor`: one documented failure mode
+  accounts for most red runs, and here it is running the analyser from the host,
+  where every framework call collapses to `mixed` and a green result has checked
+  almost nothing.
+
+- **`commands/check`.** Its own command rather than a `make` target because
+  `make check` in these projects is `lint typecheck test build-fr` — four yarn
+  scripts against the frontend container. Nothing ran the PHP. It reports the
+  three checks with their different bars: PHPStan's is zero, the test suite is
+  the real signal, and a `pint --test` failure is only yours if it names a file
+  you touched.
+
+- **`.mcp.json` with `context7`.** Also declared by `jvd-frontend`; enabling both
+  plugins brings it twice. See the README if `/mcp` shows a conflict.
+
+- **Two stale claims fixed in `laravel-api-endpoint`.** It asserted that `lang/en`
+  and `lang/uk` were "at full parity" and that the test suite was "effectively
+  empty" — both were true when the skill was written and neither is now. A skill
+  that ships from a marketplace cannot see a project tree, so both were replaced
+  with the rule plus a pointer to the hook and to `backend/AGENTS.md`.
+
 ### 1.0.0
 
 New plugin. `laravel-api-endpoint` moved here from `base_setup/.claude/skills/`,
@@ -93,8 +154,7 @@ reached the shared layer; the rest are project-local.
   part a naive key-set comparison gets wrong. i18next picks its suffix through
   `Intl.PluralRules`, and the categories differ: English needs `_one`/`_other`,
   Ukrainian also needs `_few` and `_many`. A first version of this test read
-  those eight extra Ukrainian keys in `supplier_manager` as drift and failed on
-  correct translations. Parity is now compared over *logical* keys, and each
+  those eight extra Ukrainian keys as drift and failed on correct translations. Parity is now compared over *logical* keys, and each
   locale is separately required to carry every form its own language selects —
   a missing `_many` renders the raw key for counts of five and up.
   https://www.i18next.com/translation-function/plurals
@@ -165,8 +225,8 @@ reached the shared layer; the rest are project-local.
   form does not render — react-hook-form then held an error against a name
   nothing was bound to, so the message vanished and the user saw a rejection
   with no explanation. The new one takes the form's field list and returns
-  `false` when the 422 belongs in a banner. Adopted from supplier_manager,
-  which had arrived at it independently.
+  `false` when the 422 belongs in a banner. Adopted from a project that had
+  arrived at it independently.
 - `forms-validation` skill rewritten against what the two projects actually do.
   It had gone stale to the point of being wrong — it still said
   `@hookform/resolvers` was not installed and that the auth forms were
